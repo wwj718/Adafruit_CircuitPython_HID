@@ -27,7 +27,8 @@
 
 * Author(s): Dan Halbert
 """
-import usb_hid
+# import usb_hid
+import pyb
 
 class Mouse:
     """Send USB HID mouse reports."""
@@ -42,13 +43,15 @@ class Mouse:
     def __init__(self):
         """Create a Mouse object that will send USB mouse HID reports."""
         self.hid_mouse = None
+        '''
         for device in usb_hid.devices:
             if device.usage_page == 0x1 and device.usage == 0x02:
                 self.hid_mouse = device
                 break
         if not self.hid_mouse:
             raise IOError("Could not find an HID mouse device.")
-
+        '''
+        self.hid_mouse = pyb.USB_HID()
         # Reuse this bytearray to send mouse reports.
         # report[0] buttons pressed (LEFT, MIDDLE, RIGHT)
         # report[1] x movement
@@ -139,7 +142,8 @@ class Mouse:
             self.report[1] = x
             self.report[2] = y
             self.report[3] = wheel
-            self.hid_mouse.send_report(self.report)
+            #self.hid_mouse.send_report(self.report)
+            self.hid_mouse.send(self.report)
         else:
             raise ValueError('All arguments must be >= -127 and <= 127')
 

@@ -27,9 +27,9 @@
 
 * Author(s): Scott Shawcroft, Dan Halbert
 """
-
+import pyb
 from micropython import const
-import usb_hid
+# import usb_hid
 
 from .keycode import Keycode
 
@@ -42,6 +42,7 @@ class Keyboard:
     def __init__(self):
         """Create a Keyboard object that will send USB keyboard HID reports."""
         self.hid_keyboard = None
+        '''
         for device in usb_hid.devices:
             if device.usage_page == 0x1 and device.usage == 0x06:
                 self.hid_keyboard = device
@@ -50,6 +51,8 @@ class Keyboard:
             raise IOError("Could not find an HID keyboard device.")
 
         # Reuse this bytearray to send keyboard reports.
+        '''
+        self.hid_keyboard = pyb.USB_HID()
         self.report = bytearray(8)
 
         # report[0] modifiers
@@ -62,6 +65,15 @@ class Keyboard:
         # List of regular keys currently pressed.
         # View onto bytes 2-7 in report.
         self.report_keys = memoryview(self.report)[2:]
+
+    def send_report(self,report):
+        self.hid_keyboard.send(report)
+        pyb.delay(20) #注意 delay时间太短可能出问题
+        # key up
+        buf = bytearray(8)
+        buf[2], buf[0] = 0x00, 0x00
+        self.hid_keyboard.send(buf)
+        pyb.delay(20)
 
     def press(self, *keycodes):
         """Send a report indicating that the given keys have been pressed.
@@ -87,7 +99,8 @@ class Keyboard:
         """
         for keycode in keycodes:
             self._add_keycode_to_report(keycode)
-            self.hid_keyboard.send_report(self.report)
+            # self.hid_keyboard.send_report(self.report)
+            self.send_report(self.report)
 
     def release(self, *keycodes):
         """Send a USB HID report indicating that the given keys have been released.
@@ -103,13 +116,13 @@ class Keyboard:
         """
         for keycode in keycodes:
             self._remove_keycode_from_report(keycode)
-            self.hid_keyboard.send_report(self.report)
+            self.send_report(self.report)
 
     def release_all(self):
         """Release all pressed keys."""
         for i in range(8):
             self.report[i] = 0
-        self.hid_keyboard.send_report(self.report)
+        self.send_report(self.report)
 
     def _add_keycode_to_report(self, keycode):
         """Add a single keycode to the USB HID report."""
